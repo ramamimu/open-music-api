@@ -1,6 +1,3 @@
-const ClientError = require("../../exceptions/ClientError");
-const NotFoundError = require("../../exceptions/NotFoundError");
-
 class SongHandler {
   constructor(service, validator) {
     this._service = service;

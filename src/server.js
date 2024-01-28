@@ -46,6 +46,8 @@ const init = async () => {
     },
   ]);
 
+  // on pre response useful for intercepting response after the function called
+  // this trick use for prevent repeating line of code because a lot of casses implement this logical issue
   server.ext("onPreResponse", (request, h) => {
     const { response } = request;
 
