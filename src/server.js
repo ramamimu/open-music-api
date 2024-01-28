@@ -5,6 +5,11 @@ const album = require("./api/album");
 const AlbumService = require("./services/noDb/AlbumService");
 const AlbumValidator = require("./validators/album");
 
+// song
+const song = require("./api/song");
+const SongService = require("./services/noDb/SongService");
+const SongValidator = require("./validators/song");
+
 const init = async () => {
   const server = Hapi.server({
     port: 5000,
@@ -17,6 +22,7 @@ const init = async () => {
   });
 
   const albumService = new AlbumService();
+  const songService = new SongService();
 
   await server.register([
     {
@@ -24,6 +30,13 @@ const init = async () => {
       options: {
         service: albumService,
         validator: AlbumValidator,
+      },
+    },
+    {
+      plugin: song,
+      options: {
+        service: songService,
+        validator: SongValidator,
       },
     },
   ]);
