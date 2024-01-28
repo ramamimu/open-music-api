@@ -16,7 +16,7 @@ class AlbumHandler {
     try {
       this._validator.validateAlbumPayload(request.payload);
       const { name, year } = request.payload;
-      const albumId = this._service.addAlbum({ name, year });
+      const albumId = await this._service.addAlbum({ name, year });
 
       return h
         .response({
@@ -46,7 +46,7 @@ class AlbumHandler {
   async getAlbumByIdHandler(request, h) {
     try {
       const { id } = request.params;
-      const album = this._service.getAlbumById(id);
+      const album = await this._service.getAlbumById(id);
 
       return h
         .response({
@@ -79,7 +79,7 @@ class AlbumHandler {
       const { id } = request.params;
       const { name, year } = request.payload;
 
-      this._service.editAlbumById(id, { name, year });
+      await this._service.editAlbumById(id, { name, year });
 
       return h
         .response({
@@ -102,19 +102,12 @@ class AlbumHandler {
           message: "Maaf, terjadi kegagalan pada server kami.",
         })
         .code(500);
-
-      return h
-        .response({
-          status: "error",
-          message: "Maaf, terjadi kegagalan pada server kami.",
-        })
-        .code(500);
     }
   }
   async deleteAlbumByIdHandler(request, h) {
     try {
       const { id } = request.params;
-      this._service.deleteAlbumById(id);
+      await this._service.deleteAlbumById(id);
 
       return h
         .response({
