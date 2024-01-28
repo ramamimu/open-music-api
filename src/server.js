@@ -13,8 +13,8 @@ const SongValidator = require("./validators/song");
 
 const init = async () => {
   const server = Hapi.server({
-    port: process.env.PORT,
-    host: process.env.NODE_ENV !== "production" ? process.env.HOST : "0.0.0.0",
+    port: 3000,
+    host: process.env.NODE_ENV !== "production" ? "localhost" : "0.0.0.0",
     routes: {
       cors: {
         origin: ["*"],
