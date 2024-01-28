@@ -1,4 +1,5 @@
 const ClientError = require("../../exceptions/ClientError");
+const NotFoundError = require("../../exceptions/NotFoundError");
 
 class AlbumHandler {
   constructor(service, validator) {
@@ -43,17 +44,34 @@ class AlbumHandler {
     }
   }
   async getAlbumByIdHandler(request, h) {
-    const { id } = request.params;
-    const album = this._service.getAlbumById(id);
+    try {
+      const { id } = request.params;
+      const album = this._service.getAlbumById(id);
 
-    return h
-      .response({
-        status: "success",
-        data: {
-          album,
-        },
-      })
-      .code(200);
+      return h
+        .response({
+          status: "success",
+          data: {
+            album,
+          },
+        })
+        .code(200);
+    } catch (error) {
+      if (error instanceof NotFoundError) {
+        return h
+          .response({
+            status: "fail",
+            message: error.message,
+          })
+          .code(error.statusCode);
+      }
+      return h
+        .response({
+          status: "error",
+          message: "Maaf, terjadi kegagalan pada server kami.",
+        })
+        .code(500);
+    }
   }
   async putAlbumByIdHandler(request, h) {
     try {
@@ -70,7 +88,42 @@ class AlbumHandler {
         })
         .code(200);
     } catch (error) {
-      if (error instanceof ClientError) {
+      if (error instanceof ClientError || error instanceof NotFoundError) {
+        return h
+          .response({
+            status: "fail",
+            message: error.message,
+          })
+          .code(error.statusCode);
+      }
+      return h
+        .response({
+          status: "error",
+          message: "Maaf, terjadi kegagalan pada server kami.",
+        })
+        .code(500);
+
+      return h
+        .response({
+          status: "error",
+          message: "Maaf, terjadi kegagalan pada server kami.",
+        })
+        .code(500);
+    }
+  }
+  async deleteAlbumByIdHandler(request, h) {
+    try {
+      const { id } = request.params;
+      this._service.deleteAlbumById(id);
+
+      return h
+        .response({
+          status: "success",
+          message: "success to delete album",
+        })
+        .code(200);
+    } catch (error) {
+      if (error instanceof ClientError || error instanceof NotFoundError) {
         return h
           .response({
             status: "fail",
@@ -85,17 +138,6 @@ class AlbumHandler {
         })
         .code(500);
     }
-  }
-  async deleteAlbumByIdHandler(request, h) {
-    const { id } = request.params;
-    this._service.deleteAlbumById(id);
-
-    return h
-      .response({
-        status: "success",
-        message: "success to delete album",
-      })
-      .code(200);
   }
 }
 

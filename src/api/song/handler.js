@@ -1,4 +1,5 @@
 const ClientError = require("../../exceptions/ClientError");
+const NotFoundError = require("../../exceptions/NotFoundError");
 
 class SongHandler {
   constructor(service, validator) {
@@ -63,14 +64,31 @@ class SongHandler {
       .code(200);
   }
   getSongByIdHandler(request, h) {
-    const { id } = request.params;
-    const song = this._service.getSongById(id);
-    return h
-      .response({
-        status: "success",
-        data: { song },
-      })
-      .code(200);
+    try {
+      const { id } = request.params;
+      const song = this._service.getSongById(id);
+      return h
+        .response({
+          status: "success",
+          data: { song },
+        })
+        .code(200);
+    } catch (error) {
+      if (error instanceof NotFoundError) {
+        return h
+          .response({
+            status: "fail",
+            message: error.message,
+          })
+          .code(error.statusCode);
+      }
+      return h
+        .response({
+          status: "error",
+          message: "Maaf, terjadi kegagalan pada server kami.",
+        })
+        .code(500);
+    }
   }
   putSongByIdHandler(request, h) {
     try {
@@ -94,7 +112,7 @@ class SongHandler {
         })
         .code(200);
     } catch (error) {
-      if (error instanceof ClientError) {
+      if (error instanceof ClientError || error instanceof NotFoundError) {
         return h
           .response({
             status: "fail",
@@ -111,14 +129,31 @@ class SongHandler {
     }
   }
   deleteSongByIdHandler(request, h) {
-    const { id } = request.params;
-    this._service.deleteSongById(id);
-    return h
-      .response({
-        status: "success",
-        message: "berhasil menghapus lagu",
-      })
-      .code(200);
+    try {
+      const { id } = request.params;
+      this._service.deleteSongById(id);
+      return h
+        .response({
+          status: "success",
+          message: "berhasil menghapus lagu",
+        })
+        .code(200);
+    } catch (error) {
+      if (error instanceof NotFoundError) {
+        return h
+          .response({
+            status: "fail",
+            message: error.message,
+          })
+          .code(error.statusCode);
+      }
+      return h
+        .response({
+          status: "error",
+          message: "Maaf, terjadi kegagalan pada server kami.",
+        })
+        .code(500);
+    }
   }
 }
 

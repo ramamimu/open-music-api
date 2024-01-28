@@ -1,5 +1,7 @@
 const { nanoid } = require("nanoid");
 
+const NotFoundError = require("../../exceptions/NotFoundError");
+
 class AlbumService {
   constructor() {
     this._albums = [];
@@ -20,14 +22,14 @@ class AlbumService {
   }
   getAlbumById(id) {
     const album = this._albums.filter((album) => album.id === id);
-    if (album.length < 1) throw new Error("album tidak ditemukan");
+    if (album.length < 1) throw new NotFoundError("album tidak ditemukan");
     return album[0];
   }
   editAlbumById(id, { name, year }) {
     const index = this._albums.findIndex((album) => album.id === id);
 
     if (index === -1)
-      throw new Error("gagal mengedit album, Id tidak ditemukan");
+      throw new NotFoundError("gagal mengedit album, Id tidak ditemukan");
     this._albums[index] = {
       ...this._albums[index],
       name,
@@ -38,7 +40,7 @@ class AlbumService {
     const index = this._albums.findIndex((album) => album.id === id);
 
     if (index === -1) {
-      throw new Error("Album gagal dihapus. Id tidak ditemukan");
+      throw new NotFoundError("Album gagal dihapus. Id tidak ditemukan");
     }
     this._albums.splice(index, 1);
   }
