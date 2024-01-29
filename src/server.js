@@ -64,6 +64,7 @@ const init = async () => {
           .code(response.statusCode);
       }
 
+      // keep the original error status when > 500
       if (!response.isServer) {
         return h.continue;
       }
