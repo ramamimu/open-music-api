@@ -1,9 +1,10 @@
-const Hapi = require("@hapi/hapi");
 require("dotenv").config();
 
-// error handler
-const ClientError = require("./exceptions/ClientError");
-const NotFoundError = require("./exceptions/NotFoundError");
+const Hapi = require("@hapi/hapi");
+const Jwt = require("@hapi/jwt");
+
+// middleware
+const ErrorManager = require("./middleware/onPreResponse/ErrorManager");
 
 // album
 const album = require("./api/album");
@@ -15,9 +16,20 @@ const song = require("./api/song");
 const SongService = require("./services/postgres/SongService");
 const SongValidator = require("./validators/song");
 
+// user
+const user = require("./api/user");
+const UserService = require("./services/postgres/UserService");
+const UserValidator = require("./validators/user");
+
+// authentication
+const authentication = require("./api/authentication");
+const AuthenticationService = require("./services/postgres/AuthenticationService");
+const AuthenticationValidator = require("./validators/authentication");
+const TokenManager = require("./tokenize/TokenManager");
+
 const init = async () => {
   const server = Hapi.server({
-    port: 3000,
+    port: 5000,
     host: process.env.NODE_ENV !== "production" ? "localhost" : "0.0.0.0",
     routes: {
       cors: {
@@ -26,8 +38,33 @@ const init = async () => {
     },
   });
 
+  // registrasi plugin eksternal
+  await server.register([
+    {
+      plugin: Jwt,
+    },
+  ]);
+
+  server.auth.strategy("musicapp_jwt", "jwt", {
+    keys: process.env.ACCESS_TOKEN_KEY,
+    verify: {
+      aud: false,
+      iss: false,
+      sub: false,
+      maxAgeSec: process.env.ACCESS_TOKEN_AGE,
+    },
+    validate: (artifacts) => ({
+      isValid: true,
+      credentials: {
+        id: artifacts.decoded.payload.id,
+      },
+    }),
+  });
+
   const albumService = new AlbumService();
   const songService = new SongService();
+  const userService = new UserService();
+  const authenticationService = new AuthenticationService();
 
   await server.register([
     {
@@ -44,6 +81,22 @@ const init = async () => {
         validator: SongValidator,
       },
     },
+    {
+      plugin: user,
+      options: {
+        service: userService,
+        validator: UserValidator,
+      },
+    },
+    {
+      plugin: authentication,
+      options: {
+        authenticationService,
+        userService,
+        tokenManager: TokenManager,
+        validator: AuthenticationValidator,
+      },
+    },
   ]);
 
   // on pre response useful for intercepting response after the function called
@@ -52,29 +105,7 @@ const init = async () => {
     const { response } = request;
 
     if (response instanceof Error) {
-      if (
-        response instanceof ClientError ||
-        response instanceof NotFoundError
-      ) {
-        return h
-          .response({
-            status: "fail",
-            message: response.message,
-          })
-          .code(response.statusCode);
-      }
-
-      // keep the original error status when > 500
-      if (!response.isServer) {
-        return h.continue;
-      }
-
-      return h
-        .response({
-          status: "error",
-          message: "Maaf, terjadi kegagalan pada server kami.",
-        })
-        .code(500);
+      return ErrorManager(response, h);
     }
     return h.continue;
   });
