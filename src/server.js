@@ -34,7 +34,7 @@ const PlaylistValidator = require("./validators/playlist");
 
 const init = async () => {
   const server = Hapi.server({
-    port: 5000,
+    port: process.env.PORT,
     host: process.env.NODE_ENV !== "production" ? "localhost" : "0.0.0.0",
     routes: {
       cors: {
