@@ -46,10 +46,22 @@ class SongService {
 
     const result = await this._pool.query(query);
     if (!result.rows.length) {
-      throw new NotFoundError("User tidak ditemukan");
+      throw new NotFoundError("Lagu tidak ditemukan");
     }
 
     return result.rows[0];
+  }
+
+  async verifySongId(id) {
+    const query = {
+      text: `SELECT * from ${SongTableName} where id = $1`,
+      values: [id],
+    };
+
+    const result = await this._pool.query(query);
+    if (!result.rows.length) {
+      throw new NotFoundError("Lagu tidak ditemukan");
+    }
   }
 
   async editSongById(id, { title, year, genre, performer, duration = 0 }) {
