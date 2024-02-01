@@ -1,7 +1,10 @@
+const NotFoundError = require("../../exceptions/NotFoundError");
+
 class AlbumHandler {
-  constructor(service, validator) {
+  constructor({ service, storageService, validator }) {
     this._service = service;
     this._validator = validator;
+    this._storageService = storageService;
   }
 
   async postAlbumHandler(request, h) {
@@ -55,6 +58,32 @@ class AlbumHandler {
         message: "success to delete album",
       })
       .code(200);
+  }
+  async postAlbumCoversByIdHandler(request, h) {
+    const { cover: data } = request.payload;
+    this._validator.validateImageCoversPayload(data.hapi.headers);
+
+    const { id: albumId } = request.params;
+
+    await this._storageService
+      .writeFile(data, data.hapi.filename)
+      .then(async (filename) => {
+        console.log("berhasil mengupload file: ", filename);
+        await this._service.editCoverAlbumById(
+          albumId,
+          `http://${process.env.HOST}:${process.env.PORT}/upload/images/${filename}`
+        );
+      })
+      .catch((error) => {
+        if (error instanceof NotFoundError) throw error;
+        throw new Error("Gagal Membaca File");
+      });
+    return h
+      .response({
+        status: "success",
+        message: "Sampul berhasil diunggah",
+      })
+      .code(201);
   }
 }
 

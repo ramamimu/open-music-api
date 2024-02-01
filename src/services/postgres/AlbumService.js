@@ -25,10 +25,10 @@ class AlbumService {
     return result.rows[0].id;
   }
 
-  async getAlbumById(id) {
+  async getAlbumById(albumId) {
     const query = {
       text: `SELECT * from ${AlbumTableName} where id = $1`,
-      values: [id],
+      values: [albumId],
     };
 
     const result = await this._pool.query(query);
@@ -36,13 +36,27 @@ class AlbumService {
       throw new NotFoundError("User tidak ditemukan");
     }
 
-    return result.rows[0];
+    const { id, name, year, cover_url: coverUrl } = result.rows[0];
+    return { id, name, year, coverUrl };
   }
 
-  async editAlbumById(id, { name, year }) {
+  async editAlbumById(id, { name, year, coverUrl = null }) {
     const query = {
-      text: `UPDATE ${AlbumTableName} SET name = $1, year = $2 WHERE id = $3 RETURNING id`,
-      values: [name, year, id],
+      text: `UPDATE ${AlbumTableName} SET name = $1, year = $2, cover_url = $3 WHERE id = $3 RETURNING id`,
+      values: [name, year, id, coverUrl],
+    };
+
+    const result = await this._pool.query(query);
+
+    if (!result.rows.length) {
+      throw new NotFoundError("Album gagal dihapus. Id tidak ditemukan");
+    }
+  }
+
+  async editCoverAlbumById(id, coverUrl) {
+    const query = {
+      text: `UPDATE ${AlbumTableName} SET cover_url = $2 WHERE id = $1 RETURNING id`,
+      values: [id, coverUrl],
     };
 
     const result = await this._pool.query(query);
