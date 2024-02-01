@@ -39,6 +39,7 @@ class AlbumHandler {
     const { id } = request.params;
     const { name, year } = request.payload;
 
+    await this._service.verifyAlbumById(id);
     await this._service.editAlbumById(id, { name, year });
 
     return h
@@ -68,7 +69,6 @@ class AlbumHandler {
     await this._storageService
       .writeFile(data, data.hapi.filename)
       .then(async (filename) => {
-        console.log("berhasil mengupload file: ", filename);
         await this._service.editCoverAlbumById(
           albumId,
           `http://${process.env.HOST}:${process.env.PORT}/upload/images/${filename}`
@@ -114,7 +114,7 @@ class AlbumHandler {
   }
   async getAlbumLikesByIdHandler(request, h) {
     const { id: albumId } = request.params;
-    const { count: likes } = await this._service.getAlbumLikesById(albumId);
+    const { likes, isRedis } = await this._service.getAlbumLikesById(albumId);
 
     return h
       .response({
@@ -123,6 +123,7 @@ class AlbumHandler {
           likes: parseInt(likes),
         },
       })
+      .header("X-Data-Source", `${isRedis ? "cache" : "no-cache"}`)
       .code(200);
   }
 }

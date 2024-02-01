@@ -8,9 +8,12 @@ const {
   AlbumLikesTableName,
 } = require("../../types/TableName");
 
+const { AlbumLikeKey } = require("../../types/RedisKey");
+
 class AlbumService {
-  constructor() {
+  constructor(cacheService) {
     this._pool = new Pool();
+    this._cacheService = cacheService;
   }
 
   async addAlbum({ name, year }) {
@@ -46,7 +49,7 @@ class AlbumService {
 
   async editAlbumById(id, { name, year, coverUrl = null }) {
     const query = {
-      text: `UPDATE ${AlbumTableName} SET name = $1, year = $2, cover_url = $3 WHERE id = $3 RETURNING id`,
+      text: `UPDATE ${AlbumTableName} SET name = $1, year = $2, cover_url = $4 WHERE id = $3 RETURNING id`,
       values: [name, year, id, coverUrl],
     };
 
@@ -101,9 +104,9 @@ class AlbumService {
       values: [albumId, userId],
     };
 
-    const resultHasLike = await this._pool.query(queryHasLike);
+    const resultHasLiked = await this._pool.query(queryHasLike);
 
-    if (resultHasLike.rows.length) {
+    if (resultHasLiked.rows.length) {
       throw new ClientError("Album sudah disukai");
     }
   }
@@ -130,8 +133,11 @@ class AlbumService {
     if (!result.rows.length) {
       throw new NotFoundError("Album yang disukai tidak ditemukan");
     }
+
+    await this._cacheService.delete(`${AlbumLikeKey}:${albumId}`);
   }
-  async getAlbumLikesById(albumId) {
+
+  async getLikeByDb(albumId) {
     const query = {
       text: `SELECT COUNT(*) FROM ${AlbumLikesTableName} WHERE album_id = $1`,
       values: [albumId],
@@ -143,7 +149,31 @@ class AlbumService {
       throw new NotFoundError("Album tidak ada");
     }
 
-    return result.rows[0];
+    const likes = result.rows[0].count;
+    return likes;
+  }
+
+  async getAlbumLikesById(albumId) {
+    let albumLikeVal = {
+      likes: 0,
+      isRedis: false,
+    };
+
+    try {
+      const result = await this._cacheService.get(`${AlbumLikeKey}:${albumId}`);
+      albumLikeVal.likes = result;
+      albumLikeVal.isRedis = true;
+    } catch (error) {
+      const likes = await this.getLikeByDb(albumId);
+      albumLikeVal.likes = likes;
+      albumLikeVal.isRedis = false;
+      await this._cacheService.set(
+        `${AlbumLikeKey}:${albumId}`,
+        await this.getLikeByDb(albumId),
+        30 * 60
+      );
+    }
+    return albumLikeVal;
   }
 }
 

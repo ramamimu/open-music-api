@@ -43,6 +43,9 @@ const exportValidator = require("./validators/exports");
 const upload = require("./api/uploads");
 const StorageService = require("./services/storage/StorageService");
 
+// cache
+const CacheService = require("./services/redis/CacheService");
+
 const init = async () => {
   const server = Hapi.server({
     port: process.env.PORT,
@@ -80,7 +83,8 @@ const init = async () => {
     }),
   });
 
-  const albumService = new AlbumService();
+  const cacheService = new CacheService();
+  const albumService = new AlbumService(cacheService);
   const songService = new SongService();
   const userService = new UserService();
   const authenticationService = new AuthenticationService();
@@ -133,7 +137,7 @@ const init = async () => {
       plugin: _export,
       options: {
         producerService,
-        storageService,
+        playlistService,
         validator: exportValidator,
       },
     },
