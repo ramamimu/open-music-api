@@ -32,6 +32,11 @@ const playlist = require("./api/playlist");
 const PlaylistService = require("./services/postgres/PlaylistService");
 const PlaylistValidator = require("./validators/playlist");
 
+// Export
+const _export = require("./api/export");
+const producerService = require("./services/rabbitmq/ProducerService");
+const exportValidator = require("./validators/exports");
+
 const init = async () => {
   const server = Hapi.server({
     port: process.env.PORT,
@@ -109,6 +114,14 @@ const init = async () => {
         playlistService,
         songService,
         validator: PlaylistValidator,
+      },
+    },
+    {
+      plugin: _export,
+      options: {
+        producerService,
+        playlistService,
+        validator: exportValidator,
       },
     },
   ]);
