@@ -38,6 +38,27 @@ const routes = (handler) => [
       },
     },
   },
+  {
+    method: method.POST,
+    path: "/albums/{id}/likes",
+    handler: (request, h) => handler.postAlbumLikesByIdHandler(request, h),
+    options: {
+      auth: "musicapp_jwt",
+    },
+  },
+  {
+    method: method.DELETE,
+    path: "/albums/{id}/likes",
+    handler: (request, h) => handler.deleteAlbumLikesByIdHandler(request, h),
+    options: {
+      auth: "musicapp_jwt",
+    },
+  },
+  {
+    method: method.GET,
+    path: "/albums/{id}/likes",
+    handler: (request, h) => handler.getAlbumLikesByIdHandler(request, h),
+  },
 ];
 
 module.exports = routes;

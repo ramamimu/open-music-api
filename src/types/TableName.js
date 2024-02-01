@@ -5,4 +5,5 @@ module.exports = {
   PlaylistTableName: "playlist",
   PlaylistSongTableName: "playlist_song",
   AuthenticationsTableName: "authentications",
+  AlbumLikesTableName: "album_likes",
 };

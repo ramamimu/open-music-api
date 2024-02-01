@@ -2,7 +2,11 @@ const { Pool } = require("pg");
 const { nanoid } = require("nanoid");
 
 const NotFoundError = require("../../exceptions/NotFoundError");
-const { AlbumTableName } = require("../../types/TableName");
+const ClientError = require("../../exceptions/ClientError");
+const {
+  AlbumTableName,
+  AlbumLikesTableName,
+} = require("../../types/TableName");
 
 class AlbumService {
   constructor() {
@@ -33,7 +37,7 @@ class AlbumService {
 
     const result = await this._pool.query(query);
     if (!result.rows.length) {
-      throw new NotFoundError("User tidak ditemukan");
+      throw new NotFoundError("Album tidak ditemukan");
     }
 
     const { id, name, year, cover_url: coverUrl } = result.rows[0];
@@ -77,6 +81,69 @@ class AlbumService {
     if (!result.rows.length) {
       throw new NotFoundError("Album gagal dihapus. Id tidak ditemukan");
     }
+  }
+
+  async verifyAlbumById(albumId) {
+    const query = {
+      text: `SELECT * from ${AlbumTableName} where id = $1`,
+      values: [albumId],
+    };
+
+    const result = await this._pool.query(query);
+    if (!result.rows.length) {
+      throw new NotFoundError("Album tidak ditemukan");
+    }
+  }
+
+  async verifyAlbumHasLikedByUserId(albumId, userId) {
+    const queryHasLike = {
+      text: `SELECT * FROM ${AlbumLikesTableName} WHERE album_id = $1 AND user_id = $2`,
+      values: [albumId, userId],
+    };
+
+    const resultHasLike = await this._pool.query(queryHasLike);
+
+    if (resultHasLike.rows.length) {
+      throw new ClientError("Album sudah disukai");
+    }
+  }
+
+  async addAlbumLikesById(albumId, userId) {
+    const id = nanoid(16);
+    const queryAddLike = {
+      text: `INSERT INTO ${AlbumLikesTableName} VALUES($1, $2, $3) RETURNING id`,
+      values: [id, userId, albumId],
+    };
+
+    const resultAddLike = await this._pool.query(queryAddLike);
+    if (!resultAddLike.rows.length) {
+      throw new Error("Album gagal ditambahkan");
+    }
+  }
+  async deleteAlbumLikesById(albumId, userId) {
+    const query = {
+      text: `DELETE FROM ${AlbumLikesTableName} WHERE album_id = $1 AND user_id = $2 RETURNING id`,
+      values: [albumId, userId],
+    };
+
+    const result = await this._pool.query(query);
+    if (!result.rows.length) {
+      throw new NotFoundError("Album yang disukai tidak ditemukan");
+    }
+  }
+  async getAlbumLikesById(albumId) {
+    const query = {
+      text: `SELECT COUNT(*) FROM ${AlbumLikesTableName} WHERE album_id = $1`,
+      values: [albumId],
+    };
+
+    const result = await this._pool.query(query);
+
+    if (!result.rows.length) {
+      throw new NotFoundError("Album tidak ada");
+    }
+
+    return result.rows[0];
   }
 }
 
